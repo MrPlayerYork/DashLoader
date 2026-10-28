@@ -104,11 +104,13 @@ mixin and the fast `ModelIdentifier` equals were removed because their targets c
 ## Building from source
 
 You need JDK 25. DashLoader depends on two libraries from the original author, [Hyphen](https://github.com/alphaqu/Hyphen) and
-[Taski](https://github.com/alphaqu/Taski). Their maven (`notalpha.dev`) has been unreachable, so build them into your local maven first:
+[Taski](https://github.com/alphaqu/Taski). Their maven (`notalpha.dev`) has been unreachable, so build them into your local maven first.
+Hyphen's own Gradle wrapper (7.4.2) needs an older JDK; I built it with a newer Gradle on JDK 25 instead, which needs one small change
+in Hyphen's `build.gradle` (`archivesBaseName` was removed in Gradle 9). I have not tried building it on an older JDK.
 
 ```sh
 git clone https://github.com/alphaqu/Hyphen && git clone https://github.com/alphaqu/Taski
-# Hyphen's build script needs one change for Gradle 9: in build.gradle replace
+# Only when building Hyphen with Gradle 9: in its build.gradle replace
 #   rename { "${it}_${project.archivesBaseName}" }   with   rename { "${it}_${base.archivesName.get()}" }
 (cd Hyphen && ./gradlew publishToMavenLocal) && (cd Taski && ./gradlew publishToMavenLocal)
 ./gradlew build          # the jar is in build/libs
@@ -119,7 +121,20 @@ git clone https://github.com/alphaqu/Hyphen && git clone https://github.com/alph
 that is cached, to compare a launch that makes the cache with one that loads it, or `DASHLOADER_PROFILE=1` for the timeline of the
 reload. `./gradlew test` runs the unit tests. More notes on the port are in [PORTING-26.3.md](PORTING-26.3.md).
 
+## Third-party software and licenses
+
+The release jar contains three libraries, unchanged, as nested jars in `META-INF/jars/`. Their license texts are in `META-INF/licenses/`
+inside the jar and in [`licenses/`](licenses/) in this repository (overview: [`licenses/THIRD-PARTY.md`](licenses/THIRD-PARTY.md)):
+
+| Library | Version | License |
+|---|---|---|
+| [Hyphen](https://github.com/alphaqu/Hyphen) (serialization) | 0.4.0-rc.5 | MIT, (c) 2021 QuantumFusion |
+| [Taski](https://github.com/alphaqu/Taski) (task progress) | 2.1.0 | MIT, (c) 2021 QuantumFusion |
+| [zstd-jni](https://github.com/luben/zstd-jni) (compression) | 1.5.7-1 | BSD-2-Clause, (c) 2015-present Luben Karavelov |
+
+DashLoader itself is LGPL-3.0 (`LICENCE`).
+
 ## Credits
 
 DashLoader was made by !alpha, bendy1234 and leocth, with thanks to YourKit (profiler) and JetBrains (IDEs) for the licences they
-gave the original project. The 26.3 port is by MrPlayerYork, with Claude (Anthropic) writing most of the code.
+gave the original project. Hyphen and Taski are by !alpha and contributors (QuantumFusion), zstd-jni by Luben Karavelov. The 26.3 port is by MrPlayerYork, with Claude (Anthropic) writing most of the code.

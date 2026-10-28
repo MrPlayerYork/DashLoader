@@ -123,6 +123,10 @@ jar {
     from("LICENCE") {
         rename { "${it}_${base.archivesName.get()}" }
     }
+    // License texts of the libraries bundled in META-INF/jars
+    from("licenses") {
+        into "META-INF/licenses"
+    }
 }
 
 tasks.register("getVersion") {

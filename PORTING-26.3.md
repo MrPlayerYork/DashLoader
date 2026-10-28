@@ -8,7 +8,7 @@ The port was written with Claude (Claude Code).
   no `mod*` configurations, no `remapJar`. Source uses Mojang names (`Identifier`, `Minecraft`, ...), converted from Yarn.
 - `Hyphen` 0.4.0-rc.5 and `Taski` 2.1.0 were only published on `notalpha.dev/maven`, which was unreachable. They were built
   from the `alphaqu/Hyphen` / `alphaqu/Taski` repos (same versions) with `publishToMavenLocal` and are resolved from `mavenLocal()`.
-  Hyphen needed one Gradle 9 fix in its own build script (`base.archivesName.get()`). The `notalpha.dev` repo is restricted to group `dev.notalpha`.
+  Hyphen's own wrapper is Gradle 7.4.2 (needs an older JDK); built with Gradle 9 on JDK 25 it needs one fix in its build script (`base.archivesName.get()`). A PR for that was closed as not needed (a commenter said it builds fine with its own wrapper; I did not try that). The `notalpha.dev` repo is restricted to group `dev.notalpha`.
 - `src/dev` is a second source set (mod id `dashloader_dev`) with the development tools; it is on the `runClient` classpath but not in the jar.
   The only thing the main code knows about it is the no-op `misc/DebugHooks`.
 

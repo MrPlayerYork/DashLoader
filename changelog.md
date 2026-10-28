@@ -1,3 +1,8 @@
+# DashLoader 5.1.0-beta.11 for Minecraft 26.3
+
+- The license texts of the bundled libraries (Hyphen, Taski: MIT; zstd-jni: BSD-2-Clause) are now in the jar (`META-INF/licenses/`) and in `licenses/`.
+- README: third-party software section, corrected build notes for Hyphen. No code changes since beta.10.
+
 # DashLoader 5.1.0-beta.10 for Minecraft 26.3
 
 Unofficial port of DashLoader to Minecraft 26.3, written with Claude (Claude Code). It has been tested in the development client, including with a 77 mod pack (Sodium, Iris, Continuity, Entity Model Features, C2ME, Lithium and more), but not yet widely.
