@@ -24,6 +24,16 @@ Launched and tested in the dev client (cache build + cache load).
 Measured on a Ryzen 7 3700X (16 threads), median of 3 launches, no caches vs all caches: reload 1670 ms -> 1330 ms, main thread blocking 544 -> 458 ms,
 CPU used by the reload (JFR samples) -> 28%. The gain is larger on machines with fewer threads, where the reload is CPU bound.
 
+Measured against a real no-DashLoader client (Fabric API + Modmenu only, 11 mods, same machine and world; 4 cold launches without, 3 with the cached path):
+| | without DashLoader | with DashLoader | change |
+|---|---|---|---|
+| resource reload | 1514 / 1535 / 1544 / 1636 ms (median ~1540) | 1157 / 1155 / 1180 ms (median 1157) | about -25% |
+| main thread blocking | 596 / 570 / 574 / 675 ms (median 585) | 501 / 538 / 601 ms (median 538) | about -8%, ranges overlap, not proven |
+
+The reload gain is solid; the main-thread gain is small and noisy at this sample size (most of the saving is on worker threads). The "all caches off" figures above
+still had the mod's mixins loaded, hence the lower gain there. Only the cached path was compared (a first launch also pays for building the cache); bootstrap and total
+startup were not measured. The no-DashLoader run is a temporary `-Pbaseline` Gradle block (source set without the mod) driven by `scratch/tools/{run_baseline,compare}.sh`.
+
 ## Disabled (code kept under `src/disabled/`, not compiled)
 | Feature | Why |
 |---|---|
