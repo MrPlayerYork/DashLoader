@@ -3,15 +3,16 @@
   "id": "dashloader",
   "version": "${version}",
   "name": "DashLoader",
-  "description": "Launch at the speed of Light.",
+  "description": "Launch at the speed of Light. Caches and speeds up the Minecraft resource loading. Unofficial 26.3 port.",
   "authors": [
     "!alpha",
     "bendy1234",
     "leocth"
   ],
   "contact": {
-    "homepage": "https://discord.gg/VeFTrtCkrb",
-    "sources": "https://github.com/QuantumFusionMC/DashLoader-Definition"
+    "homepage": "https://github.com/MrPlayerYork/DashLoader",
+    "sources": "https://github.com/MrPlayerYork/DashLoader",
+    "issues": "https://github.com/MrPlayerYork/DashLoader/issues"
   },
   "entrypoints": {
     "dashloader": [
@@ -29,19 +30,11 @@
     "dashloader.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.11.3",
+    "fabricloader": ">=0.19.5",
     "minecraft": "26.3",
     "java": ">=25"
   },
   "custom": {
-    "dashloader:disableoption": [
-    ],
-    "sodium:options": {
-      "mixin.features.shader.uniform": false
-    }
-  },
-  "breaks": {
-    "sodium": "<=0.1.0",
-    "fabric-api": "<0.81.0"
+    "dashloader:disableoption": []
   }
 }

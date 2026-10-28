@@ -12,7 +12,7 @@ body:
     attributes:
       label: Version
       description: What version of DashLoader are you running?
-      placeholder: 5.0.0-alpha.3
+      placeholder: 5.1.0-beta.10+26.3
     validations:
       required: true
   - type: input
@@ -20,7 +20,7 @@ body:
     attributes:
       label: Minecraft Version
       description: What Minecraft version are you using?
-      placeholder: 1.19.3
+      placeholder: 26.3
     validations:
       required: true
   - type: markdown
