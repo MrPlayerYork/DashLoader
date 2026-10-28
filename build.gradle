@@ -3,14 +3,12 @@ plugins {
     id 'com.matthewprenger.cursegradle' version '1.4.0'
     id "com.modrinth.minotaur" version "2.+"
 
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.19.3'
+    id 'java'
     id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
-
-archivesBaseName = project.archives_base_name
+base.archivesName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
@@ -22,6 +20,9 @@ repositories {
     }
     maven {
         url "https://notalpha.dev/maven/releases"
+        content {
+            includeGroup "dev.notalpha"
+        }
     }
     maven {
         name = "Terraformers"
@@ -41,10 +42,9 @@ loom {
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
 
     implementation "dev.notalpha:Hyphen:0.4.0-rc.5"
     include "dev.notalpha:Hyphen:0.4.0-rc.5"
@@ -55,14 +55,15 @@ dependencies {
     implementation 'com.github.luben:zstd-jni:1.5.7-1'
     include 'com.github.luben:zstd-jni:1.5.7-1'
 
-    modCompileOnly fabricApi.module("fabric-renderer-indigo", project.fabric_version)
+    compileOnly fabricApi.module("fabric-renderer-indigo", project.fabric_version)
+    compileOnly fabricApi.module("fabric-resource-loader-v1", project.fabric_version)
 
     // For Modmenu
-    modRuntimeOnly fabricApi.module("fabric-api-base", project.fabric_version)
-    modRuntimeOnly fabricApi.module("fabric-key-binding-api-v1", project.fabric_version)
-    modRuntimeOnly fabricApi.module("fabric-lifecycle-events-v1", project.fabric_version)
-    modRuntimeOnly fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
-    modRuntimeOnly fabricApi.module("fabric-screen-api-v1", project.fabric_version)
+    runtimeOnly fabricApi.module("fabric-api-base", project.fabric_version)
+    runtimeOnly fabricApi.module("fabric-key-mapping-api-v1", project.fabric_version)
+    runtimeOnly fabricApi.module("fabric-lifecycle-events-v1", project.fabric_version)
+    runtimeOnly fabricApi.module("fabric-resource-loader-v1", project.fabric_version)
+    runtimeOnly fabricApi.module("fabric-screen-api-v1", project.fabric_version)
 }
 
 test {
@@ -86,9 +87,10 @@ tasks.withType(JavaCompile).configureEach {
     // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
     // If Javadoc is generated, this must be specified in that task too.
     it.options.encoding = "UTF-8"
+    it.options.compilerArgs << "-Xmaxerrs" << "5000"
 
     // Minecraft 1.17 (21w19a) upwards uses Java 16.
-    it.options.release = 21
+    it.options.release = 25
 }
 
 java {
@@ -98,7 +100,7 @@ java {
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.archivesBaseName}" }
+        rename { "${it}_${base.archivesName.get()}" }
     }
 }
 
@@ -109,9 +111,9 @@ modrinth {
     changelog = file("changelog.md").getText()
     versionNumber = project.version
     versionName = "$project.version".split("\\+")[0] + " for $project.minecraft_version"
-    uploadFile = remapJar
+    uploadFile = jar
     versionType = "beta"
-    gameVersions = ['1.21.4']
+    gameVersions = ['26.3']
     loaders = ['fabric', 'quilt']
 }
 
@@ -123,12 +125,12 @@ curseforge {
         changelog = file("changelog.md")
         releaseType = 'beta'
 
-        addGameVersion "1.21.4"
+        addGameVersion "26.3"
         addGameVersion "Fabric"
         addGameVersion "Quilt"
-        addGameVersion "Java 21"
+        addGameVersion "Java 25"
 
-        mainArtifact(remapJar) {
+        mainArtifact(jar) {
             displayName = "$project.version".split("\\+")[0] + " for $project.minecraft_version"
         }
     }

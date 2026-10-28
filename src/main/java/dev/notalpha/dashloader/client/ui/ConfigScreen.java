@@ -4,11 +4,11 @@ import dev.notalpha.dashloader.client.ui.widget.ConfigListWidget;
 import dev.notalpha.dashloader.config.ConfigHandler;
 import dev.notalpha.dashloader.config.Option;
 import dev.notalpha.dashloader.misc.TranslationHelper;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextWidget;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,7 +21,7 @@ public class ConfigScreen extends Screen {
 	private ConfigListWidget configWidget;
 
 	public ConfigScreen(Screen parent) {
-		super(Text.of("Dashloader config"));
+		super(Component.literal("Dashloader config"));
 		this.parent = parent;
 	}
 
@@ -29,24 +29,24 @@ public class ConfigScreen extends Screen {
 	public void init() {
 		initConfigWidget();
 
-		this.addDrawable(new TextWidget(0, 10, this.width, this.textRenderer.fontHeight / 2, Text.of(translations.get("config.title")), this.textRenderer));
-		this.addDrawableChild(configWidget).update();
+		this.addRenderableOnly(new StringWidget(0, 10, this.width, this.font.lineHeight / 2, Component.literal(translations.get("config.title")), this.font));
+		this.addRenderableWidget(configWidget).update();
 
-		this.addDrawableChild(ButtonWidget.builder(ScreenTexts.CANCEL, button -> this.client.setScreen(this.parent)).dimensions(this.width / 2 - 154, this.height - 28, 150, 20).build());
-		this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> {
+		this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> this.minecraft.setScreenAndShow(this.parent)).bounds(this.width / 2 - 154, this.height - 28, 150, 20).build());
+		this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> {
 			this.saveConfig();
-			this.client.setScreen(this.parent);
-		}).dimensions(this.width / 2 + 4, this.height - 28, 150, 20).build());
+			this.minecraft.setScreenAndShow(this.parent);
+		}).bounds(this.width / 2 + 4, this.height - 28, 150, 20).build());
 	}
 
 	private void initConfigWidget() {
 		if (this.listInitialized) {
-			this.configWidget.setDimensionsAndPosition(this.width, this.height - 57, 0, 24);
+			this.configWidget.updateSizeAndPosition(this.width, this.height - 57, 0, 24);
 			return;
 		}
 
 		this.listInitialized = true;
-		this.configWidget = new ConfigListWidget(this.client, this.width, this.height - 57, 24, 20);
+		this.configWidget = new ConfigListWidget(this.minecraft, this.width, this.height - 57, 24, 20);
 		var list = configWidget;
 
 		var config = ConfigHandler.INSTANCE.config;

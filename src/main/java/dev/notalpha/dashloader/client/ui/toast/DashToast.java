@@ -3,21 +3,16 @@ package dev.notalpha.dashloader.client.ui.toast;
 import dev.notalpha.dashloader.client.ui.Color;
 import dev.notalpha.dashloader.client.ui.DrawerUtil;
 import dev.notalpha.dashloader.misc.HahaManager;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.toast.Toast;
-import net.minecraft.client.toast.ToastManager;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.toasts.Toast;
+import net.minecraft.client.gui.components.toasts.ToastManager;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiConsumer;
 
 public class DashToast implements Toast {
 	private static final int PROGRESS_BAR_HEIGHT = 2;
@@ -41,20 +36,18 @@ public class DashToast implements Toast {
 		}
 	}
 
-	private static void drawVertex(Matrix4f m4f, VertexConsumer consumer, float z, float x, float y, Color color) {
-		consumer.vertex(m4f, x, y, z).color(color.red(), color.green(), color.blue(), color.alpha());
-	}
-
-	public int getWidth() {
+	@Override
+	public int width() {
 		return 200;
 	}
 
-	public int getHeight() {
+	@Override
+	public int height() {
 		return 40;
 	}
 
 	@Override
-	public Visibility getVisibility() {
+	public Visibility getWantedVisibility() {
 		return visibility;
 	}
 
@@ -79,9 +72,9 @@ public class DashToast implements Toast {
 	}
 
 	@Override
-	public void draw(DrawContext context, TextRenderer textRenderer, long startTime) {
-		final int width = this.getWidth();
-		final int height = this.getHeight();
+	public void extractRenderState(GuiGraphicsExtractor context, Font textRenderer, long startTime) {
+		final int width = this.width();
+		final int height = this.height();
 		final int barY = height - PROGRESS_BAR_HEIGHT;
 
 		// Tick progress
@@ -99,55 +92,33 @@ public class DashToast implements Toast {
 		this.lines = newList;
 		this.lines.addAll(newListPrio);
 
-		// Setup scissor
-		{
-			Vector4f vec = new Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
-			vec.mul(context.getMatrices().peek().getPositionMatrix());
-			context.enableScissor((int) vec.x, (int) vec.y, (int) (vec.x + width), (int) (vec.y + height));
-		}
+		context.enableScissor(0, 0, width, height);
 
 		// Draw the ui
 		DrawerUtil.drawRect(context, 0, 0, width, height, DrawerUtil.BACKGROUND_COLOR);
 
 		// Draw the background lines.
-		this.drawRaw(context, (matrix4f, consumer) -> {
-			for (Line line : lines) {
-				line.draw(matrix4f, consumer);
-			}
-		});
+		for (Line line : lines) {
+			line.draw(context);
+		}
 
 		// Draw progress text
 		String progressText = this.state.getProgressText();
-		int progressTextY = this.fact != null ? barY - PADDING : (barY / 2) + (textRenderer.fontHeight / 2);
+		int progressTextY = this.fact != null ? barY - PADDING : (barY / 2) + (textRenderer.lineHeight / 2);
 		DrawerUtil.drawText(context, textRenderer, PADDING, progressTextY, this.state.getText(), DrawerUtil.STATUS_COLOR);
-		DrawerUtil.drawText(context, textRenderer, (width - PADDING) - textRenderer.getWidth(progressText), progressTextY, progressText, DrawerUtil.STATUS_COLOR);
+		DrawerUtil.drawText(context, textRenderer, (width - PADDING) - textRenderer.width(progressText), progressTextY, progressText, DrawerUtil.STATUS_COLOR);
 
 		if (this.fact != null) {
 			// Draw the fun fact
-			DrawerUtil.drawText(context, textRenderer, PADDING, textRenderer.fontHeight + PADDING, this.fact, DrawerUtil.FOREGROUND_COLOR);
+			DrawerUtil.drawText(context, textRenderer, PADDING, textRenderer.lineHeight + PADDING, this.fact, DrawerUtil.FOREGROUND_COLOR);
 		}
 
 		// Draw progress bar
 		DrawerUtil.drawRect(context, 0, barY, width, PROGRESS_BAR_HEIGHT, DrawerUtil.PROGRESS_TRACK);
 		DrawerUtil.drawRect(context, 0, barY, (int) (width * progress), PROGRESS_BAR_HEIGHT, progressColor);
 
-		// Epic rtx graphics. aka I slapped some glow on the things.
-		this.drawRaw(context, (matrix4f, consumer) -> {
-			// Line glow
-			for (Line line : lines) {
-				line.drawGlow(matrix4f, consumer);
-			}
-			// Progress bar glow
-			DrawerUtil.drawGlow(matrix4f, consumer, 0, barY, (int) (width * progress), PROGRESS_BAR_HEIGHT, 0.75f, progressColor, true, true, true, true);
-		});
+		// TODO(26.3): the glow effect relied on raw vertex drawing, which the extractor API no longer exposes.
 		context.disableScissor();
-	}
-
-	private void drawRaw(DrawContext context, BiConsumer<Matrix4f, VertexConsumer> consumer) {
-		var matrix = context.getMatrices().peek().getPositionMatrix();
-		var vertexConsumer = context.vertexConsumers.getBuffer(RenderLayer.getGui());
-
-		consumer.accept(matrix, vertexConsumer);
 	}
 
 	public enum ColorKind {
@@ -218,17 +189,14 @@ public class DashToast implements Toast {
 			return false;
 		}
 
-		public void draw(Matrix4f b4, VertexConsumer c) {
-			Color end = DrawerUtil.withOpacity(color, 0f);
-			drawVertex(b4, c, 0f, x + width, y, color); // right top
-			drawVertex(b4, c, 0f, x, y, end); // left top
-			drawVertex(b4, c, 0f, x, y + height, end); // left bottom
-			drawVertex(b4, c, 0f, x + width, y + height, color); // right bottom
-		}
-
-		public void drawGlow(Matrix4f b4, VertexConsumer c) {
-			if (this.colorKind != ColorKind.Neutral) {
-				DrawerUtil.drawGlow(b4, c, x, y, width, height, (getWeight() + 2.0f) / 3.0f, this.color, false, true, false, true);
+		// Fades in from the tail; the extractor only has flat fills, so approximate the gradient with slices.
+		public void draw(GuiGraphicsExtractor context) {
+			final int slices = 4;
+			final int sliceWidth = Math.max(1, this.width / slices);
+			for (int i = 0; i < slices; i++) {
+				Color sliceColor = DrawerUtil.withOpacity(color, (i + 1f) / slices);
+				int sx = (int) x + i * sliceWidth;
+				DrawerUtil.drawRect(context, sx, (int) y, sliceWidth, this.height, sliceColor);
 			}
 		}
 
@@ -245,7 +213,7 @@ public class DashToast implements Toast {
 				case Crashed -> DrawerUtil.FAILED_COLOR;
 			};
 
-			return DrawerUtil.withOpacity(color, MathHelper.clamp(((this.x) / (this.width)), 0.0f, 1.0f));
+			return DrawerUtil.withOpacity(color, Mth.clamp(((this.x) / (this.width)), 0.0f, 1.0f));
 		}
 
 		public float getWeight() {

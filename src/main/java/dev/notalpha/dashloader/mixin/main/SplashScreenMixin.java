@@ -4,60 +4,49 @@ import dev.notalpha.dashloader.DashLoader;
 import dev.notalpha.dashloader.api.cache.Cache;
 import dev.notalpha.dashloader.api.cache.CacheStatus;
 import dev.notalpha.dashloader.client.DashLoaderClient;
+import dev.notalpha.dashloader.client.model.ModelModule;
+import dev.notalpha.dashloader.client.sprite.content.MipmapModule;
 import dev.notalpha.dashloader.client.ui.toast.DashToast;
 import dev.notalpha.dashloader.client.ui.toast.DashToastState;
 import dev.notalpha.dashloader.client.ui.toast.DashToastStatus;
 import dev.notalpha.dashloader.config.ConfigHandler;
 import dev.notalpha.dashloader.misc.ProfilerUtil;
+import dev.notalpha.dashloader.misc.StateDump;
 import dev.notalpha.taski.builtin.StaticTask;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.SplashOverlay;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.toast.Toast;
-import net.minecraft.resource.ResourceReload;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.LoadingOverlay;
+import net.minecraft.client.gui.components.toasts.Toast;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = SplashOverlay.class, priority = 69420)
+@Mixin(value = LoadingOverlay.class, priority = 69420)
 public class SplashScreenMixin {
 	@Shadow
 	@Final
-	private MinecraftClient client;
-	@Shadow
-	private long reloadCompleteTime;
-	@Shadow
-	@Final
-	private ResourceReload reload;
-	@Mutable
-	@Shadow
-	@Final
-	private boolean reloading;
+	private Minecraft minecraft;
 
+	// Runs when the reload finished and the loading overlay handed over to the game (Minecraft resets the overlay and screen itself).
 	@Inject(
-			method = "render",
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;getMeasuringTimeMs()J", shift = At.Shift.BEFORE, ordinal = 1)
+			method = "tick",
+			at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", shift = At.Shift.AFTER, ordinal = 0)
 	)
-	private void done(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		this.client.setOverlay(null);
-		if (this.client.currentScreen != null) {
-			if (this.client.currentScreen instanceof TitleScreen) {
-				this.client.currentScreen = new TitleScreen(false);
-			}
-		}
-
+	private void done(CallbackInfo ci) {
+		final var toastManager = this.minecraft.gui.toastManager();
+		ModelModule.logStats();
+		MipmapModule.logStats();
+		StateDump.write(DashLoaderClient.CACHE.getStatus().name().toLowerCase());
 		DashLoader.LOG.info("Minecraft reloaded in {}", ProfilerUtil.getTimeStringFromStart(ProfilerUtil.RELOAD_START));
 		Cache cache = DashLoaderClient.CACHE;
-		if (DashLoaderClient.CACHE.getStatus() == CacheStatus.SAVE && client.getToastManager().getToast(DashToast.class, Toast.TYPE) == null) {
+		if (DashLoaderClient.CACHE.getStatus() == CacheStatus.SAVE && toastManager.getToast(DashToast.class, Toast.NO_TOKEN) == null) {
 			DashToastState rawState;
 			if (ConfigHandler.INSTANCE.config.showCachingToast) {
 				DashToast toast = new DashToast();
-				client.getToastManager().add(toast);
+				toastManager.addToast(toast);
 				rawState = toast.state;
 			} else {
 				rawState = new DashToastState();
@@ -76,7 +65,7 @@ public class SplashScreenMixin {
 					// Only show toast on fail.
 					if (!ConfigHandler.INSTANCE.config.showCachingToast) {
 						DashToast toast = new DashToast();
-						client.getToastManager().add(toast);
+						toastManager.addToast(toast);
 						state = toast.state;
 					}
 					state.setOverwriteText("Internal error, Please check logs.");
@@ -93,13 +82,9 @@ public class SplashScreenMixin {
 		}
 	}
 
-	@Inject(
-			method = "render",
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/resource/ResourceReload;isComplete()Z", shift = At.Shift.BEFORE)
-	)
-	private void removeMinimumTime(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		if (this.reloadCompleteTime == -1L && this.reload.isComplete()) {
-			this.reloading = false;
-		}
+	// Skips the artificial minimum fade-in time, the reload is the only thing worth waiting for.
+	@Inject(method = "isReadyToFadeOut", at = @At("HEAD"), cancellable = true)
+	private void removeMinimumTime(CallbackInfoReturnable<Boolean> cir) {
+		cir.setReturnValue(true);
 	}
 }

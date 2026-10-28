@@ -68,6 +68,10 @@ public class ConfigHandler {
 	}
 
 	public static boolean shouldApplyMixin(String name) {
+		// Timing mixins are only for investigating where reload time goes.
+		if (name.contains(".mixin.profile.")) {
+			return dev.notalpha.dashloader.misc.StageProfiler.enabled();
+		}
 		for (Option value : Option.values()) {
 			if (name.contains(value.mixinContains)) {
 				return OPTION_ACTIVE.get(value);

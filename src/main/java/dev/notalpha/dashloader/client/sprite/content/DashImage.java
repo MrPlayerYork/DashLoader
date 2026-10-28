@@ -4,7 +4,7 @@ import dev.notalpha.dashloader.api.DashObject;
 import dev.notalpha.dashloader.api.registry.RegistryReader;
 import dev.notalpha.dashloader.io.def.NativeImageData;
 import dev.notalpha.dashloader.mixin.accessor.NativeImageAccessor;
-import net.minecraft.client.texture.NativeImage;
+import com.mojang.blaze3d.platform.NativeImage;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -18,11 +18,11 @@ public final class DashImage implements DashObject<NativeImage, NativeImage> {
 
 	public DashImage(NativeImage nativeImage) {
 		NativeImageAccessor nativeImageAccess = (NativeImageAccessor) (Object) nativeImage;
-		this.format = nativeImage.getFormat();
+		this.format = nativeImage.format();
 		this.width = nativeImage.getWidth();
 		this.height = nativeImage.getHeight();
 
-		final int capacity = this.width * this.height * this.format.getChannelCount();
+		final int capacity = this.width * this.height * this.format.components();
 		final long pointer = nativeImageAccess.getPointer();
 
 		this.useSTB = nativeImageAccess.getIsStbImage();

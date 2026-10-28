@@ -3,11 +3,11 @@ package dev.notalpha.dashloader.client.sprite.content;
 import dev.notalpha.dashloader.api.DashObject;
 import dev.notalpha.dashloader.api.registry.RegistryReader;
 import dev.notalpha.dashloader.api.registry.RegistryWriter;
-import dev.notalpha.dashloader.misc.UnsafeHelper;
 import dev.notalpha.dashloader.mixin.accessor.SpriteContentsAccessor;
 import dev.notalpha.hyphen.scan.annotations.DataNullable;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.SpriteContents;
+import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.renderer.texture.SpriteContents;
+import net.minecraft.client.resources.metadata.animation.FrameSize;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -33,25 +33,22 @@ public final class DashSpriteContents implements DashObject<SpriteContents, Spri
 
 	public DashSpriteContents(SpriteContents contents, RegistryWriter writer) {
 		var access = (SpriteContentsAccessor) contents;
-		this.id = writer.add(contents.getId());
+		this.id = writer.add(contents.name());
 		this.image = writer.add(access.getImage());
-		this.width = contents.getWidth();
-		this.height = contents.getHeight();
-		SpriteContents.Animation animation = access.getAnimation();
+		this.width = contents.width();
+		this.height = contents.height();
+		SpriteContents.AnimatedTexture animation = access.getAnimation();
 		this.animation = animation == null ? null : new DashSpriteAnimation(animation);
 	}
 
 	public SpriteContents export(RegistryReader reader) {
-		final SpriteContents out = UnsafeHelper.allocateInstance(SpriteContents.class);
-		var access = (SpriteContentsAccessor) out;
-		access.setId(reader.get(this.id));
-
+		// The constructor works out the transparency of the image. The metadata dependent parts are filled in by SpriteOpenerMixin.
 		NativeImage image = reader.get(this.image);
-		access.setImage(image);
-		access.setHeight(height);
-		access.setWidth(width);
-		access.setMipmapLevelsImages(new NativeImage[]{image});
-		access.setAnimation(this.animation == null ? null : animation.export(out, reader));
+		MipmapModule.FINISHED_IMAGES.add(image);
+		final SpriteContents out = new SpriteContents(reader.get(this.id), new FrameSize(this.width, this.height), image);
+		if (this.animation != null) {
+			((SpriteContentsAccessor) out).setAnimation(animation.export(out, reader));
+		}
 		applySodiumScanning(out, image); // run important sodium method if present
 		return out;
 	}

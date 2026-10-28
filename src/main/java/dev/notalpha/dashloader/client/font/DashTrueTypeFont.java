@@ -6,13 +6,11 @@ import dev.notalpha.dashloader.api.registry.RegistryReader;
 import dev.notalpha.dashloader.io.IOHelper;
 import dev.notalpha.dashloader.misc.UnsafeHelper;
 import dev.notalpha.dashloader.mixin.accessor.TrueTypeFontAccessor;
-import it.unimi.dsi.fastutil.ints.IntArraySet;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.FreeTypeUtil;
-import net.minecraft.client.font.GlyphContainer;
-import net.minecraft.client.font.TrueTypeFont;
-import net.minecraft.resource.Resource;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.font.providers.FreeTypeUtil;
+import com.mojang.blaze3d.font.TrueTypeGlyphProvider;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -25,16 +23,16 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Optional;
 
-public final class DashTrueTypeFont implements DashObject<TrueTypeFont, TrueTypeFont> {
+public final class DashTrueTypeFont implements DashObject<TrueTypeGlyphProvider, TrueTypeGlyphProvider> {
 	public final byte[] fontData;
 	public final float oversample;
 	public final int[] excludedCharacters;
-	public final int size;
+	public final float size;
 	public final float shiftX;
 	public final float shiftY;
-	private transient TrueTypeFont _font;
+	private transient TrueTypeGlyphProvider _font;
 
-	public DashTrueTypeFont(byte[] fontData, float oversample, int[] excludedCharacters, int size, float shiftX, float shiftY) {
+	public DashTrueTypeFont(byte[] fontData, float oversample, int[] excludedCharacters, float size, float shiftX, float shiftY) {
 		this.fontData = fontData;
 		this.oversample = oversample;
 		this.excludedCharacters = excludedCharacters;
@@ -43,16 +41,16 @@ public final class DashTrueTypeFont implements DashObject<TrueTypeFont, TrueType
 		this.shiftY = shiftY;
 	}
 
-	public DashTrueTypeFont(TrueTypeFont font) {
+	public DashTrueTypeFont(TrueTypeGlyphProvider font) {
 		TrueTypeFontAccessor fontAccess = (TrueTypeFontAccessor) font;
 		FT_Face ft_face = fontAccess.getFace();
 		FontPrams prams = FontModule.FONT_TO_DATA.get(CacheStatus.SAVE).get(ft_face);
 		final Identifier ttFont = prams.id();
 		byte[] data = null;
 		try {
-			Optional<Resource> resource = MinecraftClient.getInstance().getResourceManager().getResource(ttFont.withPrefixedPath("font/"));
+			Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(ttFont.withPrefix("font/"));
 			if (resource.isPresent()) {
-				var stream = resource.get().getInputStream();
+				var stream = resource.get().open();
 				data = IOHelper.streamToArray(stream);
 				stream.close();
 			}
@@ -70,12 +68,12 @@ public final class DashTrueTypeFont implements DashObject<TrueTypeFont, TrueType
 		this.fontData = data;
 		this.oversample = fontAccess.getOversample();
 		this.excludedCharacters = prams.skip().codePoints().toArray();
-		this.size = Math.round(prams.size() * this.oversample);
+		this.size = prams.size();
 	}
 
 	@Override
-	public TrueTypeFont export(RegistryReader handler) {
-		this._font = UnsafeHelper.allocateInstance(TrueTypeFont.class);
+	public TrueTypeGlyphProvider export(RegistryReader handler) {
+		this._font = UnsafeHelper.allocateInstance(TrueTypeGlyphProvider.class);
 
 		TrueTypeFontAccessor trueTypeFontAccess = (TrueTypeFontAccessor) this._font;
 		trueTypeFontAccess.setOversample(this.oversample);
@@ -90,46 +88,25 @@ public final class DashTrueTypeFont implements DashObject<TrueTypeFont, TrueType
 
 		FT_Face ft_face = null;
 
-		var trueTypeFontAccess = (TrueTypeFontAccessor) this._font;
-		var set = new IntArraySet(excludedCharacters);
-
-		var container = new GlyphContainer<>(TrueTypeFont.LazyGlyph[]::new, TrueTypeFont.LazyGlyph[][]::new);
-
 		try {
-			synchronized (FreeTypeUtil.LOCK) {
+			synchronized (FreeTypeUtil.LIBRARY_LOCK) {
 				try (MemoryStack memoryStack = MemoryStack.stackPush()) {
 					PointerBuffer pointerBuffer = memoryStack.mallocPointer(1);
-					FreeTypeUtil.checkFatalError(FreeType.FT_New_Memory_Face(FreeTypeUtil.initialize(), fontBuffer, 0L, pointerBuffer), "Initializing font face");
+					FreeTypeUtil.assertError(FreeType.FT_New_Memory_Face(FreeTypeUtil.getLibrary(), fontBuffer, 0L, pointerBuffer), "Initializing font face");
 					ft_face = FT_Face.create(pointerBuffer.get());
-
-					FreeType.FT_Set_Pixel_Sizes(ft_face, this.size, this.size);
-
-					FT_Vector vec = FreeTypeUtil.set(FT_Vector.malloc(memoryStack), this.shiftX, this.shiftY);
-					FreeType.FT_Set_Transform(ft_face, null, vec);
-
-					IntBuffer intBuffer = memoryStack.mallocInt(1);
-					int j = (int) FreeType.FT_Get_First_Char(ft_face, intBuffer);
-
-					while (true) {
-						int k = intBuffer.get(0);
-						if (k == 0) {
-							break;
-						}
-
-						if (!set.contains(j)) {
-							container.put(j, new TrueTypeFont.LazyGlyph(k));
-						}
-
-						j = (int) FreeType.FT_Get_Next_Char(ft_face, j, intBuffer);
-					}
 				}
 			}
 
-			trueTypeFontAccess.setContainer(container);
+			// The constructor sets up the face and indexes the glyphs, its state is moved over to the instance that has already been handed out.
+			var skip = new String(this.excludedCharacters, 0, this.excludedCharacters.length);
+			var built = new TrueTypeGlyphProvider(fontBuffer, ft_face, this.size, this.oversample, this.shiftX, this.shiftY, skip);
+
+			var trueTypeFontAccess = (TrueTypeFontAccessor) this._font;
+			trueTypeFontAccess.setContainer(((TrueTypeFontAccessor) built).getContainer());
 			trueTypeFontAccess.setFace(ft_face);
 			trueTypeFontAccess.setBuffer(fontBuffer);
 		} catch (Throwable e) {
-			synchronized (FreeTypeUtil.LOCK) {
+			synchronized (FreeTypeUtil.LIBRARY_LOCK) {
 				if (ft_face != null) {
 					FreeType.FT_Done_Face(ft_face);
 				}

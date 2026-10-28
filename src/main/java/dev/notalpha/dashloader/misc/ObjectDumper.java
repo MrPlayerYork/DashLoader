@@ -1,6 +1,6 @@
 package dev.notalpha.dashloader.misc;
 
-import net.minecraft.client.texture.NativeImage;
+import com.mojang.blaze3d.platform.NativeImage;
 import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
@@ -41,7 +41,7 @@ public class ObjectDumper {
 					case HashMap<?, ?> map -> appendDetail(buffer, fieldName, map);
 					case ArrayList<?> list -> appendDetail(buffer, fieldName, list);
 					case NativeImage image ->
-							buffer.append("Image{ format: ").append(image.getFormat()).append(", size: ").append(image.getWidth()).append("x").append(image.getHeight()).append(" }");
+							buffer.append("Image{ format: ").append(image.format()).append(", size: ").append(image.getWidth()).append("x").append(image.getHeight()).append(" }");
 					case IntBuffer buffer1 -> appendBuff(buffer, buffer1, buffer1::get);
 					case FloatBuffer buffer1 -> appendBuff(buffer, buffer1, buffer1::get);
 					case ByteBuffer buffer1 -> appendBuff(buffer, buffer1, buffer1::get);
