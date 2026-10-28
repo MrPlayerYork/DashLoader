@@ -16,6 +16,8 @@ import java.util.EnumMap;
 public class ConfigHandler {
 	private static final EnumMap<Option, Boolean> OPTION_ACTIVE = new EnumMap<>(Option.class);
 	private static final String DISABLE_OPTION_TAG = "dashloader:disableoption";
+	/** Options of older versions which no longer exist, they may still be in a config file. */
+	private static final java.util.Set<String> RETIRED_OPTIONS = java.util.Set.of("CACHE_ATLASES", "CACHE_SHADER", "CACHE_SPRITE_STITCHING", "FAST_MODEL_IDENTIFIER_EQUALS", "FAST_WALL_BLOCK", "UNSAFE_MIPMAP_GENERATION");
 
 	static {
 		for (Option value : Option.values()) {
@@ -40,7 +42,11 @@ public class ConfigHandler {
 					DashLoader.LOG.warn("Disabled Optional Feature {} from DashLoader config.", s);
 				}
 			} catch (IllegalArgumentException illegalArgumentException) {
-				DashLoader.LOG.error("Could not disable Optional Feature {} from DashLoader config as it does not exist.", s);
+				if (RETIRED_OPTIONS.contains(s.toUpperCase())) {
+					DashLoader.LOG.info("The option {} in the DashLoader config does nothing any more, it was removed.", s);
+				} else {
+					DashLoader.LOG.error("Could not disable Optional Feature {} from DashLoader config as it does not exist.", s);
+				}
 			}
 		});
 
@@ -54,24 +60,16 @@ public class ConfigHandler {
 						OPTION_ACTIVE.put(option, false);
 						DashLoader.LOG.warn("Disabled Optional Feature {} from {} config. {}", feature, mod.getId(), mod.getName());
 					} catch (IllegalArgumentException illegalArgumentException) {
-						DashLoader.LOG.error("Could not disable Optional Feature {} from {} config as it does not exist. {}", feature, mod.getId(), mod.getName());
+						if (!RETIRED_OPTIONS.contains(feature.toUpperCase())) {
+							DashLoader.LOG.error("Could not disable Optional Feature {} from {} config as it does not exist. {}", feature, mod.getId(), mod.getName());
+						}
 					}
 				}
-			}
-		}
-		if (isVulkanModPresent()) {
-			for (Option option : new Option[]{Option.CACHE_SHADER, Option.UNSAFE_MIPMAP_GENERATION, Option.CACHE_ATLASES}) {
-				OPTION_ACTIVE.put(option, false);
-				DashLoader.LOG.warn("Found VulkanMod, Disabling Optional Feature {}", option.name());
 			}
 		}
 	}
 
 	public static boolean shouldApplyMixin(String name) {
-		// Timing mixins are only for investigating where reload time goes.
-		if (name.contains(".mixin.profile.")) {
-			return dev.notalpha.dashloader.misc.StageProfiler.enabled();
-		}
 		for (Option value : Option.values()) {
 			if (name.contains(value.mixinContains)) {
 				return OPTION_ACTIVE.get(value);
@@ -110,7 +108,4 @@ public class ConfigHandler {
 		}
 	}
 
-	private static boolean isVulkanModPresent() {
-		return FabricLoader.getInstance().isModLoaded("vulkanmod");
-	}
 }

@@ -5,7 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.font.GlyphProvider;
 import dev.notalpha.dashloader.api.cache.CacheStatus;
 import dev.notalpha.dashloader.client.font.FontSetModule;
-import dev.notalpha.dashloader.misc.StateDump;
+import dev.notalpha.dashloader.misc.DebugHooks;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -33,7 +33,7 @@ public abstract class FontSetSelectMixin {
 	private List<GlyphProvider> dashloaderSelectProviders(List<GlyphProvider.Conditional> all, Set<FontOption> options, Operation<List<GlyphProvider>> original) {
 		List<GlyphProvider> result = this.dashloaderSelect(all, options, original);
 		String font = FontSetModule.CURRENT_FONT.get();
-		if (StateDump.enabled() && font != null) {
+		if (DebugHooks.enabled() && font != null) {
 			long h = 17;
 			for (GlyphProvider provider : result) {
 				for (int i = 0; i < all.size(); i++) {
@@ -47,7 +47,7 @@ public abstract class FontSetSelectMixin {
 				h = h * 31 + e.getKey();
 				h = h * 31 + e.getValue().hashCode();
 			}
-			StateDump.record("font", font + "|" + options, h);
+			DebugHooks.record("font", font + "|" + options, h);
 		}
 		return result;
 	}

@@ -6,7 +6,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.Transparency;
 import dev.notalpha.dashloader.api.cache.CacheStatus;
 import dev.notalpha.dashloader.client.sprite.content.MipmapModule;
-import dev.notalpha.dashloader.misc.StateDump;
+import dev.notalpha.dashloader.misc.DebugHooks;
 import net.minecraft.client.renderer.texture.MipmapGenerator;
 import net.minecraft.client.renderer.texture.MipmapStrategy;
 import net.minecraft.resources.Identifier;
@@ -17,8 +17,8 @@ public class MipmapGenerateMixin {
 	@WrapMethod(method = "generateMipLevels(Lnet/minecraft/resources/Identifier;[Lcom/mojang/blaze3d/platform/NativeImage;ILnet/minecraft/client/renderer/texture/MipmapStrategy;FLcom/mojang/blaze3d/platform/Transparency;)[Lcom/mojang/blaze3d/platform/NativeImage;")
 	private static NativeImage[] dashloaderGenerate(Identifier name, NativeImage[] images, int level, MipmapStrategy strategy, float alphaCutoffBias, Transparency transparency, Operation<NativeImage[]> original) {
 		NativeImage[] out = dashloaderGenerateInner(name, images, level, strategy, alphaCutoffBias, transparency, original);
-		if (StateDump.enabled() && images.length == 1) {
-			StateDump.record("mip", name + "|" + level + "|" + strategy + "|" + Float.floatToIntBits(alphaCutoffBias) + "|" + transparency, StateDump.hash(out));
+		if (DebugHooks.enabled() && images.length == 1) {
+			DebugHooks.record("mip", name + "|" + level + "|" + strategy + "|" + Float.floatToIntBits(alphaCutoffBias) + "|" + transparency, out);
 		}
 		return out;
 	}

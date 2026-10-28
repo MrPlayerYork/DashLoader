@@ -38,14 +38,10 @@
     "option.cache.model.GeometryBakeMixin",
     "option.cache.model.ItemGeneratorBakeMixin",
     "option.cache.model.ModelGroupMixin",
-    "profile.BlockStateLoaderProfileMixin",
-    "profile.ClientItemInfoProfileMixin",
-    "profile.FontManagerProfileMixin",
-    "profile.ModelGroupProfileMixin",
-    "profile.SpriteLoaderProfileMixin",
-    "profile.ModelManagerProfileMixin",
     "accessor.SpriteContentsAccessor",
     "accessor.TextureSlotsAccessor",
+    "accessor.IdentifierPatternAccessor",
+    "option.misc.ResourceFilterMixin",
     "option.cache.sprite.content.MipmapGenerateMixin",
     "option.cache.sprite.content.SpriteOpenerMixin"
   ]

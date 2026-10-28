@@ -1,11 +1,6 @@
 plugins {
-    // Publishing
-    id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id "com.modrinth.minotaur" version "2.+"
-
     id 'net.fabricmc.fabric-loom' version '1.19.3'
     id 'java'
-    id 'maven-publish'
 }
 
 base.archivesName = project.archives_base_name
@@ -34,10 +29,33 @@ repositories {
     }
 }
 
+// Development tools (state dumps, stage timings). They run in the dev client but are not part of the release jar.
+sourceSets {
+    dev {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    devImplementation.extendsFrom implementation
+    devRuntimeOnly.extendsFrom runtimeOnly
+    // Loom puts the launch tooling on the runtime classpath of the main source set only
+    devRuntimeClasspath.extendsFrom runtimeClasspath
+}
+
 loom {
     accessWidenerPath = file("src/main/resources/dashloader.accesswidener")
     log4jConfigs.from(file("log4j-dev.xml"))
+    mods {
+        dashloader { sourceSet sourceSets.main }
+        dashloader_dev { sourceSet sourceSets.dev }
+    }
+    runs {
+        client { source sourceSets.dev }
+    }
 }
+// Compile the development tools with every build so they cannot rot, even though they are not in the jar.
+tasks.named('build') { dependsOn tasks.named('devClasses') }
 
 dependencies {
     // To change the versions see the gradle.properties file
@@ -54,6 +72,10 @@ dependencies {
 
     implementation 'com.github.luben:zstd-jni:1.5.7-1'
     include 'com.github.luben:zstd-jni:1.5.7-1'
+
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     compileOnly fabricApi.module("fabric-renderer-indigo", project.fabric_version)
     compileOnly fabricApi.module("fabric-resource-loader-v1", project.fabric_version)
@@ -94,74 +116,15 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-    //include sources in maven publish
     withSourcesJar()
 }
 
 jar {
-    from("LICENSE") {
+    from("LICENCE") {
         rename { "${it}_${base.archivesName.get()}" }
     }
 }
 
-// Publishing
-modrinth {
-    token = project.hasProperty("modrinthApiKey") ? project.modrinthApiKey : ""
-    projectId = 'ZfQ3kTvR'
-    changelog = file("changelog.md").getText()
-    versionNumber = project.version
-    versionName = "$project.version".split("\\+")[0] + " for $project.minecraft_version"
-    uploadFile = jar
-    versionType = "beta"
-    gameVersions = ['26.3']
-    loaders = ['fabric', 'quilt']
-}
-
-curseforge {
-    apiKey = project.hasProperty("curseForgeApiKey") ? project.curseForgeApiKey : ""
-    project {
-        id = '472772'
-        changelogType = "markdown"
-        changelog = file("changelog.md")
-        releaseType = 'beta'
-
-        addGameVersion "26.3"
-        addGameVersion "Fabric"
-        addGameVersion "Quilt"
-        addGameVersion "Java 25"
-
-        mainArtifact(jar) {
-            displayName = "$project.version".split("\\+")[0] + " for $project.minecraft_version"
-        }
-    }
-    options {
-        forgeGradleIntegration = false
-    }
-}
-
-tasks.register("publishMod") {
-    dependsOn 'modrinth'
-    dependsOn 'curseforge'
-}
-
 tasks.register("getVersion") {
     print("$project.version")
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "notalpha"
-            url = "https://notalpha.dev/maven/releases"
-            credentials(PasswordCredentials)
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-    }
-    publications {
-        maven(MavenPublication) {
-            from components.java
-        }
-    }
 }

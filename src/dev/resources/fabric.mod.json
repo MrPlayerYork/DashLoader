@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "dashloader_dev",
+  "version": "0.0.0",
+  "name": "DashLoader development tools",
+  "description": "State dumps (DASHLOADER_DUMP) and stage timings (DASHLOADER_PROFILE) for developing DashLoader. Not part of the release.",
+  "environment": "client",
+  "entrypoints": {
+    "preLaunch": [
+      "dev.notalpha.dashloader.dev.DevPreLaunch"
+    ]
+  },
+  "mixins": [
+    "dashloader-dev.mixins.json"
+  ],
+  "depends": {
+    "dashloader": "*"
+  }
+}

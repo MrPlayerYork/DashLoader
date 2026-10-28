@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.notalpha.dashloader.dev.mixin",
+  "plugin": "dev.notalpha.dashloader.dev.DevMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ScreenshotMixin",
+    "BlockStateLoaderProfileMixin",
+    "ClientItemInfoProfileMixin",
+    "FontManagerProfileMixin",
+    "ModelGroupProfileMixin",
+    "SpriteLoaderProfileMixin",
+    "ModelManagerProfileMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

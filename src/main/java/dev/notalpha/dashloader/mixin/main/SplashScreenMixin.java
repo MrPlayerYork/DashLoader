@@ -11,7 +11,7 @@ import dev.notalpha.dashloader.client.ui.toast.DashToastState;
 import dev.notalpha.dashloader.client.ui.toast.DashToastStatus;
 import dev.notalpha.dashloader.config.ConfigHandler;
 import dev.notalpha.dashloader.misc.ProfilerUtil;
-import dev.notalpha.dashloader.misc.StateDump;
+import dev.notalpha.dashloader.misc.DebugHooks;
 import dev.notalpha.taski.builtin.StaticTask;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LoadingOverlay;
@@ -39,7 +39,7 @@ public class SplashScreenMixin {
 		final var toastManager = this.minecraft.gui.toastManager();
 		ModelModule.logStats();
 		MipmapModule.logStats();
-		StateDump.write(DashLoaderClient.CACHE.getStatus().name().toLowerCase());
+		DebugHooks.write(DashLoaderClient.CACHE.getStatus().name().toLowerCase());
 		DashLoader.LOG.info("Minecraft reloaded in {}", ProfilerUtil.getTimeStringFromStart(ProfilerUtil.RELOAD_START));
 		Cache cache = DashLoaderClient.CACHE;
 		if (DashLoaderClient.CACHE.getStatus() == CacheStatus.SAVE && toastManager.getToast(DashToast.class, Toast.NO_TOKEN) == null) {

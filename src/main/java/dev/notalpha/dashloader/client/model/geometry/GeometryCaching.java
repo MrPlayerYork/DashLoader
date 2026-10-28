@@ -3,7 +3,7 @@ package dev.notalpha.dashloader.client.model.geometry;
 import dev.notalpha.dashloader.DashLoader;
 import dev.notalpha.dashloader.api.cache.CacheStatus;
 import dev.notalpha.dashloader.client.model.ModelModule;
-import dev.notalpha.dashloader.misc.StateDump;
+import dev.notalpha.dashloader.misc.DebugHooks;
 import net.minecraft.client.renderer.block.dispatch.ModelState;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelDebugName;
@@ -31,8 +31,8 @@ public final class GeometryCaching {
 	 */
 	public static QuadCollection bake(@Nullable Object content, TextureSlots slots, ModelBaker baker, ModelState state, ModelDebugName name, Supplier<QuadCollection> original) {
 		QuadCollection out = bakeInner(content, slots, baker, state, name, original);
-		if (StateDump.enabled()) {
-			StateDump.record("geometry", GeometryKey.of(name.debugName(), slots, state), StateDump.hash(out));
+		if (DebugHooks.enabled()) {
+			DebugHooks.record("geometry", GeometryKey.of(name.debugName(), slots, state), out);
 		}
 		return out;
 	}
